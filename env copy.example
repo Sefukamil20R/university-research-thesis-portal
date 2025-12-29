@@ -1,0 +1,22 @@
+# Database Configuration (Neon PostgreSQL)
+# Get your connection string from Neon dashboard
+# Format: postgresql://user:password@host/dbname
+# SSL is automatically enabled if not present in URL
+DATABASE_URL=postgresql://user:password@host.neon.tech/dbname?sslmode=require
+
+# JWT Configuration
+# Generate a secure secret key for production
+# Use: openssl rand -hex 32
+SECRET_KEY=your-secret-key-here-change-in-production
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+
+# Account Security
+MAX_LOGIN_ATTEMPTS=5
+LOCKOUT_DURATION_MINUTES=30
+
+# Email Configuration (Placeholder - TODO: Implement email sending)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASSWORD=your-app-password
+

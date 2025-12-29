@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Register - Research Thesis Portal{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Register</h1>
+    <form id="registerForm">
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required>
+        
+        <label for="password">Password (min 8 characters):</label>
+        <input type="password" id="password" name="password" required minlength="8">
+        
+        <label for="role_id">Role:</label>
+        <select id="role_id" name="role_id" required>
+            {% for role in roles %}
+            <option value="{{ role.id }}">{{ role.role_name }}</option>
+            {% endfor %}
+        </select>
+        
+        <label for="clearance_level">Clearance Level:</label>
+        <select id="clearance_level" name="clearance_level" required>
+            <option value="1">1 - Public</option>
+            <option value="2">2 - Internal</option>
+            <option value="3">3 - Confidential</option>
+        </select>
+        
+        <button type="submit">Register</button>
+    </form>
+    <p><a href="/auth/login">Already have an account? Login here</a></p>
+    <div id="message"></div>
+</div>
+
+<script>
+document.getElementById('registerForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = {
+        email: formData.get('email'),
+        password: formData.get('password'),
+        role_id: parseInt(formData.get('role_id')),
+        clearance_level: parseInt(formData.get('clearance_level'))
+    };
+    
+    try {
+        const response = await fetch('/auth/register', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        });
+        
+        if (response.ok) {
+            document.getElementById('message').innerHTML = 
+                '<p class="success">Registration successful! <a href="/auth/login">Login here</a></p>';
+            this.reset();
+        } else {
+            // Try to parse JSON error, but handle HTML error pages
+            let errorMessage = 'Unknown error';
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                try {
+                    const error = await response.json();
+                    errorMessage = error.detail || error.message || 'Unknown error';
+                } catch (e) {
+                    errorMessage = `Server error (${response.status})`;
+                }
+            } else {
+                // Server returned HTML (error page)
+                const text = await response.text();
+                errorMessage = `Server error (${response.status}): ${response.statusText}`;
+                console.error('Server returned HTML instead of JSON:', text.substring(0, 200));
+            }
+            document.getElementById('message').innerHTML = 
+                '<p class="error">Registration failed: ' + errorMessage + '</p>';
+        }
+    } catch (error) {
+        document.getElementById('message').innerHTML = 
+            '<p class="error">Registration failed: ' + error.message + '</p>';
+        console.error('Registration error:', error);
+    }
+});
+</script>
+{% endblock %}
+

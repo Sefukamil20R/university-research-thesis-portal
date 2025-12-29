@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Research Thesis Portal{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Login</h1>
+    <form action="/auth/login" method="post">
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required>
+        
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required>
+        
+        <button type="submit">Login</button>
+    </form>
+    <p><a href="/auth/register">Don't have an account? Register here</a></p>
+</div>
+
+<script>
+// Handle form submission for JWT token
+document.querySelector('form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = {
+        email: formData.get('email'),
+        password: formData.get('password')
+    };
+    
+    try {
+        const response = await fetch('/auth/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            // Store token in localStorage
+            localStorage.setItem('access_token', result.access_token);
+            // Redirect to dashboard
+            window.location.href = '/dashboard';
+        } else {
+            const error = await response.json();
+            alert('Login failed: ' + (error.detail || 'Invalid credentials'));
+        }
+    } catch (error) {
+        alert('Login failed: ' + error.message);
+    }
+});
+</script>
+{% endblock %}
+

@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Research Thesis Portal{% endblock %}
+
+{% block content %}
+<div class="container">
+    <nav>
+        <a href="/dashboard">Dashboard</a>
+        <a href="#" onclick="viewTheses()">View Theses</a>
+        <a href="#" onclick="logout()">Logout</a>
+    </nav>
+    
+    <h1>Dashboard</h1>
+    <div id="userInfo">
+        <p>Loading user information...</p>
+    </div>
+    
+    <h2>Actions</h2>
+    <ul>
+        <li><a href="#" onclick="viewTheses()">View My Theses</a></li>
+    </ul>
+    
+    <div id="thesesList" style="margin-top: 20px;"></div>
+</div>
+
+<script>
+// Helper function to get auth token
+function getAuthToken() {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+        window.location.href = '/auth/login';
+        return null;
+    }
+    return token;
+}
+
+// Helper function to make authenticated requests
+async function authenticatedFetch(url, options = {}) {
+    const token = getAuthToken();
+    if (!token) return null;
+    
+    const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        ...options.headers
+    };
+    
+    try {
+        const response = await fetch(url, { ...options, headers });
+        
+        if (response.status === 401) {
+            localStorage.removeItem('access_token');
+            window.location.href = '/auth/login';
+            return null;
+        }
+        
+        return response;
+    } catch (error) {
+        console.error('Request error:', error);
+        return null;
+    }
+}
+
+// Load user information on page load
+async function loadUserInfo() {
+    const token = getAuthToken();
+    if (!token) return;
+    
+    try {
+        const response = await authenticatedFetch('/auth/me');
+        
+        if (response && response.ok) {
+            const user = await response.json();
+            const clearanceNames = {1: 'Public', 2: 'Internal', 3: 'Confidential'};
+            
+            document.getElementById('userInfo').innerHTML = `
+                <p>Welcome, ${user.email}!</p>
+                <p><strong>Clearance Level:</strong> ${user.clearance_level} (${clearanceNames[user.clearance_level] || 'Unknown'})</p>
+            `;
+        }
+    } catch (error) {
+        console.error('Error loading user info:', error);
+        document.getElementById('userInfo').innerHTML = '<p class="error">Error loading user information</p>';
+    }
+}
+
+// View theses
+async function viewTheses() {
+    const thesesListDiv = document.getElementById('thesesList');
+    thesesListDiv.innerHTML = '<p>Loading theses...</p>';
+    
+    try {
+        const response = await authenticatedFetch('/thesis/');
+        
+        if (response && response.ok) {
+            const theses = await response.json();
+            
+            if (theses.length === 0) {
+                thesesListDiv.innerHTML = '<p>No theses found.</p>';
+            } else {
+                let html = '<h3>Available Theses</h3><ul>';
+                theses.forEach(thesis => {
+                    html += `<li><strong>${thesis.title}</strong> (Classification: ${thesis.classification_level}, Status: ${thesis.status})</li>`;
+                });
+                html += '</ul>';
+                thesesListDiv.innerHTML = html;
+            }
+        } else if (response) {
+            const error = await response.json();
+            thesesListDiv.innerHTML = `<p class="error">Error: ${error.detail || 'Failed to load theses'}</p>`;
+        }
+    } catch (error) {
+        console.error('Error loading theses:', error);
+        thesesListDiv.innerHTML = '<p class="error">Error loading theses. Please try again.</p>';
+    }
+}
+
+function logout() {
+    localStorage.removeItem('access_token');
+    window.location.href = '/auth/login';
+}
+
+// Load user info when page loads
+window.addEventListener('load', loadUserInfo);
+</script>
+{% endblock %}
+
